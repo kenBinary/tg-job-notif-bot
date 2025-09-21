@@ -1,0 +1,25 @@
+from db.engine.engine import engine_init_local, engine_init_remote
+from db.Base import Base
+from utils.args_init import init_cli_args
+
+# Need to import all models here because otherwise they won't be registered in Base
+from db.models.User import User
+from db.models.LastRecentJob import LastRecentJob
+
+
+def main():
+    args = init_cli_args()
+    print("Creating database tables...")
+    if args.prod:
+        print("Using remote database")
+        engine = engine_init_remote()
+        Base.metadata.create_all(bind=engine)
+    else:
+        print("Using local database")
+        engine = engine_init_local()
+        Base.metadata.create_all(bind=engine)
+    print("Database tables created successfully.")
+
+
+if __name__ == "__main__":
+    main()
