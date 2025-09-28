@@ -86,7 +86,7 @@ def main() -> None:
             SessionLocal=SessionLocal,
             olj_api=olj_api,
         ),
-        interval=60,
+        interval=600,
         first=10,
         name="send_job_notification",
     )
