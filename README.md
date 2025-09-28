@@ -1,11 +1,11 @@
 # Telegram Job Notification Bot
 
-A Telegram bot that sends real-time job notifications based on user-defined keywords. The bot polls an external job API every minute and delivers personalized job alerts to subscribed users.
+A Telegram bot that sends real-time job notifications based on user-defined keywords. The bot polls an external job API periodically and delivers personalized job alerts to subscribed users.
 
 ## Features
 
 - **Keyword-based job filtering**: Users can set custom search keywords for job matching
-- **Real-time notifications**: Jobs are fetched every minute and sent immediately to relevant users
+- **Real-time notifications**: Jobs are fetched periodically and sent immediately to relevant users
 - **User management**: Track user preferences, activity, and subscription status
 - **Dual database support**: Local SQLite for development, remote Turso for production
 - **External API integration**: Connects to OLJ Scraper API for job data
