@@ -68,6 +68,7 @@ API_BASE_URL=http://localhost:8000
 # Required for Production: Turso Database
 TURSO_DATABASE_URL=libsql://your-database-url.turso.io
 TURSO_AUTH_TOKEN=your_turso_auth_token
+JOB_SEND_INTERVAL_SECONDS — number of seconds between when jobs should be sent.
 ```
 
 ## Usage
@@ -96,7 +97,7 @@ python main.py
 ## Configuration
 
 ### Job Notification Settings
-- **Polling Interval**: 60 seconds (configurable in `main.py`)
+- **Polling Interval**: every N seconds (configurable in `.env`)
 - **Job Limit**: 30 jobs per fetch (configurable in `send_job_notification.py`)
 - **Message Delay**: 1.5 seconds between job notifications to prevent rate limiting
 
@@ -122,7 +123,7 @@ The bot integrates with an external job scraper API that must be running separat
 
 ### Telegram Bot API
 - **Token**: Required in environment variables
-- **Commands**: `/start`, `/stop`, `/cancel`
+- **Commands**: `/start`, `/stop`, `/cancel`, `/view`, `/change`
 - **Message Handling**: Keyword input and job notifications
 
 ## Example Command
