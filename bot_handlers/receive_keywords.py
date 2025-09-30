@@ -22,10 +22,15 @@ async def receive_keywords(
     chat_id = update.effective_chat.id
     keywords_raw = update.message.text
 
-    if not re.match(r"^[a-zA-Z0-9\s]+(?:,[a-zA-Z0-9\s]+)*$", keywords_raw.strip()):
+    if not re.match(
+        r"^[a-zA-Z0-9\s\-.]+(?:,[a-zA-Z0-9\s\-.]+)*$", keywords_raw.strip()
+    ):
         await context.bot.send_message(
             chat_id=chat_id,
-            text="Invalid format. Please provide keywords separated by commas (e.g., 'python, react, remote').",
+            text=(
+                f"Invalid format. Please provide keywords separated by commas (e.g., 'python, react, remote'). \n"
+                f"The keywords can only contain letters, numbers, spaces, hyphens (-), and periods (.)"
+            ),
         )
         return ConversationStates.AWAITING_KEYWORDS
 
@@ -42,6 +47,7 @@ async def receive_keywords(
         )
         return ConversationStates.AWAITING_KEYWORDS
 
+    keywords = keywords[:10]
     user = User(
         telegram_id=str(chat_user.id),
         chat_id=str(chat_id),
@@ -75,9 +81,11 @@ async def receive_keywords(
 
     confirmation_message = (
         "Great! I've saved your keywords.\n"
-        f"I will now notify you every 1 minute with new jobs matching: `{', '.join(keywords)}`.\n"
+        f"I will now notify you periodically with new jobs matching: {', '.join(keywords)}.\n\n"
         "You can update your keywords anytime by stopping (/stop) and then starting (/start) again.\n"
-        "You can also just /stop to unsubscribe from notifications."
+        "Or you can just send /change to update your keywords.\n"
+        "You may also send /view to see your current keywords.\n"
+        "You can also send /stop to unsubscribe from notifications."
     )
     await context.bot.send_message(chat_id=chat_id, text=confirmation_message)
     return ConversationHandler.END

@@ -23,6 +23,12 @@ async def send_job_notification(
 
         logger.info(f"Sending job notifications to {len(users)} users.")
         for user in users:
+            if user.chat_id is None or user.search_keywords is None:
+                logger.info(
+                    f"Skipping user {user.telegram_id} due to missing chat_id or search_keywords."
+                )
+                continue
+
             new_jobs_response, last_recent_job_id = olj_api.get_new_jobs(
                 user.last_recent_job_id,
                 q=user.search_keywords,

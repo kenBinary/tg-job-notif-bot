@@ -19,6 +19,8 @@ from bot_handlers.start import start
 from bot_handlers.stop_notifications import stop_notifications
 from bot_handlers.receive_keywords import receive_keywords
 from bot_handlers.send_job_notification import send_job_notification
+from bot_handlers.view_keywords import view_keywords
+from bot_handlers.changing_keywords import changing_keywords
 from utils.args_init import init_cli_args
 
 logging.basicConfig(
@@ -31,9 +33,12 @@ def main() -> None:
     load_dotenv()
     args = init_cli_args()
     API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
-    olj_api = OLJJobsAPIService(API_BASE_URL)
+    JOB_SEND_INTERVAL_SECONDS = int(os.getenv("JOB_SEND_INTERVAL_SECONDS", 600))
 
     logger.info(f"Running in {'development' if args.dev else 'production'} mode")
+    logger.info(f"Job Notification Interval: {JOB_SEND_INTERVAL_SECONDS} seconds")
+
+    olj_api = OLJJobsAPIService(API_BASE_URL)
     if olj_api.is_healthy():
         logger.info("API is healthy")
     else:
@@ -72,10 +77,34 @@ def main() -> None:
     )
     application.add_handler(conv_handler)
 
+    change_keywords_conv_handler = ConversationHandler(
+        entry_points=[
+            CommandHandler(
+                "change", partial(changing_keywords, SessionLocal=SessionLocal)
+            )
+        ],
+        states={
+            ConversationStates.AWAITING_KEYWORDS: [
+                MessageHandler(
+                    filters.TEXT & ~filters.COMMAND,
+                    partial(receive_keywords, SessionLocal=SessionLocal),
+                )
+            ],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+    )
+    application.add_handler(change_keywords_conv_handler)
+
     application.add_handler(
         CommandHandler(
             "stop",
             partial(stop_notifications, SessionLocal=SessionLocal),
+        )
+    )
+    application.add_handler(
+        CommandHandler(
+            "view",
+            partial(view_keywords, SessionLocal=SessionLocal),
         )
     )
 
@@ -86,7 +115,7 @@ def main() -> None:
             SessionLocal=SessionLocal,
             olj_api=olj_api,
         ),
-        interval=600,
+        interval=JOB_SEND_INTERVAL_SECONDS,
         first=10,
         name="send_job_notification",
     )
