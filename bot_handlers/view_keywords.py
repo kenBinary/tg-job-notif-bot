@@ -1,15 +1,21 @@
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
-from sqlalchemy.orm import sessionmaker
 from db.repository.user_repository import get_user_by_chat_id
 
 logger = logging.getLogger(__name__)
 
 
-async def view_keywords(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, SessionLocal: sessionmaker
-):
+async def view_keywords(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    SessionLocal = context.bot_data.get("SessionLocal")
+    if not SessionLocal:
+        logger.error("SessionLocal not found in bot_data")
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="An error occurred. Please try again later.",
+        )
+        return
+
     chat_id = update.effective_chat.id
 
     with SessionLocal() as session:

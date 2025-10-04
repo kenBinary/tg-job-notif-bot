@@ -5,15 +5,21 @@ from telegram.ext import (
     ContextTypes,
     ConversationHandler,
 )
-from sqlalchemy.orm import sessionmaker
 from states.conversation_states import ConversationStates
 
 logger = logging.getLogger(__name__)
 
 
-async def changing_keywords(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, SessionLocal: sessionmaker
-) -> int:
+async def changing_keywords(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    SessionLocal = context.bot_data.get("SessionLocal")
+    if not SessionLocal:
+        logger.error("SessionLocal not found in bot_data")
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="An error occurred. Please try again later.",
+        )
+        return ConversationHandler.END
+
     user = update.effective_user
     chat_id = update.effective_chat.id
 
