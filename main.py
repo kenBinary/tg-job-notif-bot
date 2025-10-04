@@ -1,42 +1,30 @@
-from functools import partial
+import asyncio
 import os
 import logging
-from services.olj_jobs_api import OLJJobsAPIService
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    MessageHandler,
-    filters,
-    ConversationHandler,
-)
+import uvicorn
 from dotenv import load_dotenv
-from bot_handlers.cancel import cancel
-from bot_handlers.error_handler import error_handler
+from services.olj_jobs_api import OLJJobsAPIService
 from db.engine.engine import engine_init_local, engine_init_remote
 from db.session.session import create_session_factory
-from states.conversation_states import ConversationStates
-from bot_handlers.start import start
-from bot_handlers.stop_notifications import stop_notifications
-from bot_handlers.receive_keywords import receive_keywords
-from bot_handlers.send_job_notification import send_job_notification
-from bot_handlers.view_keywords import view_keywords
-from bot_handlers.changing_keywords import changing_keywords
 from utils.args_init import init_cli_args
+from bot import create_bot_application
+from webhook_api import create_webhook_app
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)-8s]: %(message)s", level=logging.INFO
 )
+logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
-def main() -> None:
+async def main() -> None:
     load_dotenv()
     args = init_cli_args()
     API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
-    JOB_SEND_INTERVAL_SECONDS = int(os.getenv("JOB_SEND_INTERVAL_SECONDS", 600))
+    WEBHOOK_HOST = os.getenv("WEBHOOK_HOST", "0.0.0.0")
+    WEBHOOK_PORT = int(os.getenv("WEBHOOK_PORT", "8080"))
 
     logger.info(f"Running in {'development' if args.dev else 'production'} mode")
-    logger.info(f"Job Notification Interval: {JOB_SEND_INTERVAL_SECONDS} seconds")
 
     olj_api = OLJJobsAPIService(API_BASE_URL)
     if olj_api.is_healthy():
@@ -61,70 +49,32 @@ def main() -> None:
         engine = engine_init_local()
     SessionLocal = create_session_factory(engine)
 
-    application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+    application = create_bot_application(TELEGRAM_BOT_TOKEN, SessionLocal, olj_api)
 
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
-        states={
-            ConversationStates.AWAITING_KEYWORDS: [
-                MessageHandler(
-                    filters.TEXT & ~filters.COMMAND,
-                    partial(receive_keywords, SessionLocal=SessionLocal),
-                )
-            ],
-        },
-        fallbacks=[CommandHandler("cancel", cancel)],
+    webhook_app = create_webhook_app(application)
+
+    config = uvicorn.Config(
+        app=webhook_app,
+        host=WEBHOOK_HOST,
+        port=WEBHOOK_PORT,
+        log_level="info",
     )
-    application.add_handler(conv_handler)
+    server = uvicorn.Server(config)
 
-    change_keywords_conv_handler = ConversationHandler(
-        entry_points=[
-            CommandHandler(
-                "change", partial(changing_keywords, SessionLocal=SessionLocal)
-            )
-        ],
-        states={
-            ConversationStates.AWAITING_KEYWORDS: [
-                MessageHandler(
-                    filters.TEXT & ~filters.COMMAND,
-                    partial(receive_keywords, SessionLocal=SessionLocal),
-                )
-            ],
-        },
-        fallbacks=[CommandHandler("cancel", cancel)],
-    )
-    application.add_handler(change_keywords_conv_handler)
+    logger.info(f"Starting webhook server on {WEBHOOK_HOST}:{WEBHOOK_PORT}")
+    logger.info("Starting Telegram bot with polling...")
 
-    application.add_handler(
-        CommandHandler(
-            "stop",
-            partial(stop_notifications, SessionLocal=SessionLocal),
-        )
-    )
-    application.add_handler(
-        CommandHandler(
-            "view",
-            partial(view_keywords, SessionLocal=SessionLocal),
-        )
-    )
+    async with application:
+        await application.initialize()
+        await application.start()
+        await application.updater.start_polling()
 
-    job_queue = application.job_queue
-    job_queue.run_repeating(
-        partial(
-            send_job_notification,
-            SessionLocal=SessionLocal,
-            olj_api=olj_api,
-        ),
-        interval=JOB_SEND_INTERVAL_SECONDS,
-        first=10,
-        name="send_job_notification",
-    )
+        await server.serve()
 
-    application.add_error_handler(error_handler)
-
-    logger.info("Bot is starting...")
-    application.run_polling()
+        await application.updater.stop()
+        await application.stop()
+        await application.shutdown()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
