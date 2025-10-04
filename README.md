@@ -9,6 +9,7 @@ A Telegram bot that sends real-time job notifications based on user-defined keyw
 - **User management**: Track user preferences, activity, and subscription status
 - **Dual database support**: Local SQLite for development, remote Turso for production
 - **External API integration**: Connects to OLJ Scraper API for job data
+- **Webhook**: Webhook for job notification sending
 
 ## Requirements
 
@@ -59,16 +60,19 @@ python -m scripts.seed_db --prod  # Remote Turso
 Create a `.env` file in the project root:
 
 ```env
-# Required: Telegram Bot Configuration
+# Telegram Bot Configuration
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 
-# Required: External API Configuration
+# External API Configuration
 API_BASE_URL=http://localhost:8000
 
-# Required for Production: Turso Database
+# Turso Database tokens
 TURSO_DATABASE_URL=libsql://your-database-url.turso.io
 TURSO_AUTH_TOKEN=your_turso_auth_token
-JOB_SEND_INTERVAL_SECONDS — number of seconds between when jobs should be sent.
+
+# Webhook config
+WEBHOOK_HOST=0.0.0.0        
+WEBHOOK_PORT=8080
 ```
 
 ## Usage
@@ -126,6 +130,10 @@ The bot integrates with an external job scraper API that must be running separat
 - **Commands**: `/start`, `/stop`, `/cancel`, `/view`, `/change`
 - **Message Handling**: Keyword input and job notifications
 
+### Webhook
+- **Trigger Job Notification** : `POST http://localhost:8080/webhook/trigger` 
+- **Health Check**: `GET http://localhost:8080/health`
+
 ## Example Command
 
 ```bash
@@ -167,3 +175,4 @@ python main.py --prod                     # Production mode
 - [ ] Implement getting the jobs via webhooks instead of requesting resource every minute
 - [ ] Make this available to public
     - [ ] Service to deactive users if no activity in a week
+- [ ] Optimize
