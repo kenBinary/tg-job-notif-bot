@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from typing import List, Tuple
 from telegram.ext import (
     ContextTypes,
@@ -80,18 +81,18 @@ async def send_message(
 
 
 def filter_jobs(
-    all_jobs: List[Job], user_keywords: List[str], last_seen_job_id: int
+    all_jobs: List[Job], user_keywords: str, last_seen_job_id: int
 ) -> Tuple[List[Job], int]:
     unseen_jobs = []
 
-    for keyword in user_keywords:
-        keyword_lower = keyword.lower()
-        all_jobs = [
-            job
-            for job in all_jobs
-            if keyword_lower in job.title.lower()
-            or keyword_lower in job.summary.lower()
-        ]
+    keywords = [kw.strip().lower() for kw in user_keywords.split(",") if kw.strip()]
+    pattern = r"\b(" + "|".join(re.escape(kw) for kw in keywords) + r")\b"
+    all_jobs = [
+        job
+        for job in all_jobs
+        if re.search(pattern, job.title, re.IGNORECASE)
+        or re.search(pattern, job.summary, re.IGNORECASE)
+    ]
 
     for job in all_jobs:
         if job.id > last_seen_job_id:
