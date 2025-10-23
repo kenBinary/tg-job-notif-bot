@@ -113,29 +113,15 @@ class OLJJobsAPIService:
             self.logger.error(f"Failed to parse API response: {e}")
             raise ValueError(f"Invalid API response format: {e}")
 
-    def get_new_jobs(
-        self, user_last_recent_job_id, **kwargs
-    ) -> Tuple[OLJScraperAPIResponse, int]:
+    def get_new_jobs(self, **kwargs) -> OLJScraperAPIResponse:
         try:
             response = self.get_jobs(**kwargs)
             self.logger.debug(f"Fetched {len(response.jobs)} jobs from API")
-            new_recent_job_id = user_last_recent_job_id or 0
-
-            new_jobs = []
-            for job in response.jobs:
-                if job.id > (user_last_recent_job_id or 0):
-                    new_jobs.append(job)
-                else:
-                    break
-
-            if len(new_jobs) > 0:
-                new_recent_job_id = new_jobs[0].id
-            self.logger.info(f"Last recent job ID: {new_recent_job_id}")
 
             new_response_data = {
-                "jobs": [job.__dict__ for job in new_jobs],
+                "jobs": [job.__dict__ for job in response.jobs],
                 "pagination": {
-                    "total_count": len(new_jobs),
+                    "total_count": len(response.jobs),
                     "total_pages": response.pagination.total_pages,
                     "current_page": response.pagination.current_page,
                     "limit": response.pagination.limit,
@@ -154,12 +140,9 @@ class OLJJobsAPIService:
             }
 
             self.logger.info(
-                f"Found {len(new_jobs)} new jobs out of {len(response.jobs)} total jobs"
+                f"Found {len(response.jobs)} new jobs out of {len(response.jobs)} total jobs"
             )
-            return (
-                OLJScraperAPIResponse.from_dict(new_response_data),
-                new_recent_job_id,
-            )
+            return OLJScraperAPIResponse.from_dict(new_response_data)
 
         except Exception as e:
             self.logger.error(f"Failed to get new jobs: {e}")
