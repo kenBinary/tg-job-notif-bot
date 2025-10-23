@@ -23,8 +23,13 @@ async def send_job_notification(
         if not users:
             return
 
+        exclude_fields = ["job_overview", "raw_text"]
         logger.info(f"Sending job notifications to {len(users)} users.")
-        recent_jobs: List[Job] = olj_api.get_new_jobs(limit=30).jobs
+
+        recent_jobs: List[Job] = olj_api.get_new_jobs(
+            limit=30, exclude=",".join(exclude_fields)
+        ).jobs
+
         for user in users:
             if user.chat_id is None or user.search_keywords is None:
                 logger.info(

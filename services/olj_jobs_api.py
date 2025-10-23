@@ -34,6 +34,7 @@ class OLJJobsAPIService:
         sort_by: Optional[str] = None,
         order: Optional[str] = None,
         q: Optional[str] = None,
+        exclude: Optional[str] = None,
     ) -> OLJScraperAPIResponse:
         params = {}
 
@@ -92,6 +93,9 @@ class OLJJobsAPIService:
 
         if q is not None:
             params["q"] = q
+
+        if exclude is not None:
+            params["exclude"] = exclude
 
         try:
             url = f"{self.base_url}/api/jobs"
