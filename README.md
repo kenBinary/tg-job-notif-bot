@@ -35,6 +35,8 @@ pip install -r requirements.txt
 
 ## Setup
 
+**Important:** before running this bot, make sure the api on the scraper runs first
+
 ### Database Setup
 
 Create database tables:
