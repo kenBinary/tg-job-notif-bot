@@ -48,13 +48,6 @@ Remove tables (cleanup):
 python -m scripts.table_cleanup --dev   # Local SQLite
 python -m scripts.table_cleanup --prod  # Remote Turso
 ```
-
-Seed database with sample data:
-```bash
-python -m scripts.seed_db --dev   # Local SQLite
-python -m scripts.seed_db --prod  # Remote Turso
-```
-
 ### Environment Variables
 
 Create a `.env` file in the project root:
