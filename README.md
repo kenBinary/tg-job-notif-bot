@@ -48,6 +48,8 @@ Remove tables (cleanup):
 python -m scripts.table_cleanup --dev   # Local SQLite
 python -m scripts.table_cleanup --prod  # Remote Turso
 ```
+
+Or use `./cleanup_dev_tables.bash` to remove and create tables in one go
 ### Environment Variables
 
 Create a `.env` file in the project root:
@@ -67,6 +69,7 @@ TURSO_AUTH_TOKEN=your_turso_auth_token
 WEBHOOK_HOST=0.0.0.0        
 WEBHOOK_PORT=8080
 ```
+**Note: webhook is ran along with the bot, so you only need to setup the .env vars**
 
 ## Usage
 
@@ -80,7 +83,7 @@ python main.py --dev
 python main.py --prod
 ```
 
-### Default Mode (Development)
+### Default (Development)
 ```bash
 python main.py
 ```
@@ -94,7 +97,7 @@ python main.py
 ## Configuration
 
 ### Job Notification Settings
-- **Polling Interval**: every N seconds (configurable in `.env`)
+- **Webhook Request**: the scraper sends a post request to the webhook which then triggers that telegrm bot to send the jobs
 - **Job Limit**: 30 jobs per fetch (configurable in `send_job_notification.py`)
 - **Message Delay**: 1.5 seconds between job notifications to prevent rate limiting
 
@@ -112,6 +115,7 @@ python main.py
 
 ### OLJ Scraper API
 The bot integrates with an external job scraper API that must be running separately:
+Repository is found here [github](https://github.com/kenBinary/olj-scraper)
 
 - **Health Check**: `/health` endpoint validation on startup
 - **Job Fetching**: Retrieves jobs with keyword filtering and pagination
@@ -137,35 +141,13 @@ python main.py --dev
 # 2. Bot asks for job keywords
 # 3. User responds: "python, react, remote"
 # 4. Bot confirms setup and begins monitoring
-# 5. Every 60 seconds, bot checks for new jobs
+# 5. Whenever the webhook is triggered, the bot sends job notifications
 # 6. Matching jobs are sent as notifications
-```
-
-## Scripts
-
-### Database Management
-```bash
-python -m scripts.create_tables --dev     # Local development
-python -m scripts.create_tables --prod    # Production
-
-# Remove all database tables
-python -m scripts.table_cleanup --dev     # Local development
-python -m scripts.table_cleanup --prod    # Production
-
-# Seed database with sample data
-python -m scripts.seed_db --dev           # Local development
-python -m scripts.seed_db --prod          # Production
-```
-
-### Bot Operations
-```bash
-python main.py --dev                      # Development mode
-python main.py --prod                     # Production mode
 ```
 
 ## TODO
 
-- [ ] Implement getting the jobs via webhooks instead of requesting resource every minute
+- [x] Implement getting the jobs via webhooks instead of requesting resource every minute
 - [ ] Make this available to public
     - [ ] Service to deactive users if no activity in a week
 - [ ] Optimize
